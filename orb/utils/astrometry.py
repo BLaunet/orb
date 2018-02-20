@@ -4,7 +4,7 @@
 # File: astrometry.py
 
 ## Copyright (c) 2010-2017 Thomas Martin <thomas.martin.1@ulaval.ca>
-## 
+##
 ## This file is part of ORB
 ##
 ## ORB is free software: you can redistribute it and/or modify it
@@ -54,23 +54,23 @@ class PSF(object):
     def array2d(self, nx, ny):
         """Return a 2D profile given the size of the returned
         array.
-        
+
         :param nx: Length of the returned array along x axis
         :param ny: Length of the returned array along y axis
         """
         return self.varray2d(int(nx), int(ny))
-    
+
     def varray2d(self, nx, ny):
         """Return a vectorized 2D profile given the size of the returned
         array.
-        
+
         :param nx: Length of the returned array along x axis
         :param ny: Length of the returned array along y axis
         """
         return np.fromfunction(
             np.vectorize(self.psf2d), (int(nx), int(ny)))
 
-    
+
 
 ##################################################
 #### CLASS Moffat ################################
@@ -93,17 +93,17 @@ class Moffat(PSF):
 
       and,
       :math:`r = (x - dx)^2 + (y - dy)^2`
-    
+
       The total flux F under the 2D profile is thus:
       :math:`F = A \\times \\frac{\\pi \\alpha^2}{\\beta - 1}`
     """
 
     input_params = list(['height', 'amplitude', 'x', 'y', 'fwhm', 'beta'])
     """Keys of the input parameters"""
-    
+
     params = dict()
     """dictionary containing the parameters of the profile"""
-    
+
     alpha = None # Alpha: coefficient defined from beta and FWHM
 
     def __init__(self, params):
@@ -117,7 +117,7 @@ class Moffat(PSF):
         """
         MAX_BETA = 30.
         self.params = dict()
-        
+
         if isinstance(params, dict):
             if (set([key for key in params.iterkeys()])
                 & set(self.input_params) == set(self.input_params)):
@@ -158,12 +158,12 @@ class Moffat(PSF):
         self.psf = lambda r: (
             self.params['height'] + self.params['amplitude']
             * (1. + (r/self.alpha)**2.)**(-self.params['beta']))
-        
+
         # 2-D PSF function
         self.psf2d = lambda x, y: (
             self.psf(np.sqrt((x - self.params['x'])**2.
                              + (y - self.params['y'])**2.)))
-        
+
 
     def flux(self):
         """Return the total flux under the 2D profile.
@@ -177,9 +177,9 @@ class Moffat(PSF):
 
     def flux_error(self, amplitude_err, width_err):
         """Return flux error.
-        
+
         :param amplitude_err: estimation of the amplitude error
-        
+
         :param width_err: estimation of the width error
 
         .. warning:: Not implemented yet!
@@ -189,7 +189,7 @@ class Moffat(PSF):
     def array2d(self, nx, ny):
         """Return a 2D profile given the size of the returned
         array.
-        
+
         :param nx: Length of the returned array along x axis
         :param ny: Length of the returned array along y axis
         """
@@ -197,7 +197,7 @@ class Moffat(PSF):
             float(self.params['height']), float(self.params['amplitude']),
             float(self.params['x']), float(self.params['y']),
             float(self.params['fwhm']), self.params['beta'], int(nx), int(ny)))
-    
+
 ##################################################
 #### CLASS Gaussian ##############################
 ##################################################
@@ -211,19 +211,19 @@ class Gaussian(PSF):
 
       and,
       :math:`r = (x - dx)^2 + (y - dy)^2`
-      
+
       The total flux F under the 2D profile is:
       :math:`F = 2 \\pi A W^2`
-    
+
     """
 
 
     input_params = list(['height', 'amplitude', 'x', 'y', 'fwhm'])
     """Keys of the input parameters"""
-    
+
     params = dict()
     """dictionary containing the parameters of the profile"""
-    
+
     width = None # Width = FWHM / abs(2.*sqrt(2. * log(2.)))
 
 
@@ -236,7 +236,7 @@ class Gaussian(PSF):
           elements stored in this order: ['height', 'amplitude', 'x',
           'y', 'fwhm']
         """
-        
+
         self.params = dict()
         if isinstance(params, dict):
             if (set([key for key in params.iterkeys()])
@@ -268,38 +268,38 @@ class Gaussian(PSF):
         self.psf = lambda r: (
             self.params['height'] + self.params['amplitude']
             * np.exp(-(r)**2./(2.*self.width**2.)))
-        
+
         # 2-D PSF function
         self.psf2d = lambda x, y: (
             self.psf(math.sqrt((x-self.params['x'])**2.
                                +(y-self.params['y'])**2.)))
-        
+
 
     def flux(self):
         """Return the total flux under the 2D profile.
-        
+
         The total flux F under a 2D profile is :
         :math:`F = 2 \\pi A W^2`
-        
+
         .. note:: Under a 1d profile the flux is :math:`F = \\sqrt{2\\pi}A W`
         """
         return 2. * self.params['amplitude'] * (self.width)**2 * math.pi
 
     def flux_error(self, amplitude_err, width_err):
         """Return flux error.
-        
+
         :param amplitude_err: estimation of the amplitude error
-        
+
         :param width_err: estimation of the width error
         """
         return self.flux() * math.sqrt(
             (amplitude_err / self.params['amplitude'])**2.
             + 2. * (width_err / self.width)**2.)
-    
+
     def array2d(self, nx, ny):
         """Return a 2D profile given the size of the returned
         array.
-        
+
         :param nx: Length of the returned array along x axis
         :param ny: Length of the returned array along y axis
         """
@@ -366,15 +366,15 @@ def guess(star_box, pos=None, height=None, precise_pos=False):
         else:
             x_guess = np.argmax(np.sum(star_box, axis=1))
             y_guess = np.argmax(np.sum(star_box, axis=0))
-            
+
     if height is not None:
         h_guess = height
     else:
         h_guess = sky_background_level(star_box)
-        
+
     a_guess = star_box[int(x_guess), int(y_guess)] - h_guess
     fwhm_guess = float(min(star_box.shape)) * 0.2
-    
+
     return [h_guess,a_guess,x_guess,y_guess,fwhm_guess]
 
 
@@ -400,7 +400,7 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
     :param fwhm_pix: (Optional) Estimate of the FWHM in pixels. If
       None given FWHM is estimated to half the box size (default
       None).
-      
+
     :param beta: (Optional) Beta parameter of the moffat psf. Used
       only if the fitted profile is a Moffat psf (default 3.5).
 
@@ -421,7 +421,7 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
 
     :param fix_fwhm: (Optional) Fix FWHM to its estimation (default
       False).
-      
+
     :param fix_pos: (Optional) Fix position parameters (x,y) at their
       estimated value (default False).
 
@@ -482,14 +482,14 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
         background_noise = (
             orb.utils.stats.robust_std(sky_pixels)
             - np.sqrt(mean_sky))
-   
+
         return background_noise
-        
+
     def sigma(data, ron, dcl):
         # guessing sigma as sqrt(photon noise + readout noise^2 + dark
         # current level)
         return np.sqrt(abs(data) + (ron)**2. + dcl)
-        
+
     def diff(free_p, free_i, fixed_p, profile, data, sig, saturation):
         data_dimx = data.shape[0]
         data_dimy = data.shape[1]
@@ -541,12 +541,12 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
         ron = get_background_noise(star_box, fwhm_pix,
                                    guess_params[2], guess_params[3])
         dcl = 0.
-        
+
     profile = get_profile(profile_name)
 
     if profile_name == 'moffat':
         guess_params = np.concatenate((guess_params, [beta]))
-        
+
     guess_params = np.array(guess_params, dtype=float)
 
     fixed_params = np.copy(guess_params)
@@ -562,7 +562,7 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
         masked_params[4] = False
     if fix_beta and profile_name == 'moffat':
         masked_params[5] = False
-    
+
 
     free_params = guess_params[np.nonzero(masked_params)]
     free_index = np.arange(guess_params.shape[0])[np.nonzero(masked_params)]
@@ -579,13 +579,13 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
     except Exception, e:
         warnings.warn('fit_star leastsq exception: {}'.format(e))
         return []
-    
+
     if fit_params[-1] <= 4:
         fixed_params[free_index] = fit_params[0]
         cov_x = fit_params[1]
         fit_params = profile(fixed_params).params
         fit_params['fwhm_pix'] = fit_params['fwhm']
-        
+
         # Check fit params for oddities
         if check:
             box_size = min(star_box.shape)
@@ -618,12 +618,12 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
                     < (np.median(star_box) - np.min(star_box))):
                     if check_reject: logging.info('AMP + HEI < median')
                     return []
-        
+
         # reduced chi-square
         fit_params['chi-square'] = np.sum(
             diff([],[], fixed_params, profile, star_box,
                  sigma(star_box, ron, dcl), saturation)**2.)
-            
+
         fit_params['reduced-chi-square'] = (
             fit_params['chi-square']
             / (np.size(star_box) - np.size(free_params)))
@@ -643,7 +643,7 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
             flux + Beta * (1. + math.sqrt(Beta/N))**2.
             * (background_noise**2.)))
         fit_params['snr'] = SNR
-        
+
         # error estimation
         fit_params['height_err'] = 0.
         fit_params['amplitude_err'] = 0.
@@ -675,9 +675,9 @@ def fit_star(star_box, profile_name='gaussian', fwhm_pix=None,
                 fit_params['fwhm_err']/(2. * math.sqrt(math.log(4))))
         else:
             return []
-        
+
         return fit_params
-        
+
     else:
         return []
 
@@ -735,7 +735,7 @@ def aperture_photometry(star_box, fwhm_guess, background_guess=None,
     :return: A Tuple (flux, flux_error, aperture surface,
       bad_estimation_flag). If the estimation is bad,
       bad_estimation_flat is set to 1, else it is set to 0.
-    
+
     .. note:: Best aperture for maximum S/N: 1. FWHM (Howell 1989,
       Howell 1992). But that works only when the PSF is well sampled
       which is not always the case so a higher aperture coefficient
@@ -762,28 +762,28 @@ def aperture_photometry(star_box, fwhm_guess, background_guess=None,
     """
     MIN_APER_SIZE = 0.5 # Minimum warning flux coefficient in the
                         # aperture
-    
+
     C_AP = aper_coeff # Aperture coefficient
-    
+
     C_IN = C_AP + 1. # Inner radius coefficient of the bckg annulus
-    
+
     MIN_BACK_COEFF = 5. # Minimum percentage of the pixels in the
                         # annulus to estimate the background
-                        
+
     SUR_VAL_COEFF = 10 # Number of pixel division to estimate the
                        # surface value
 
     # Outer radius coefficient of the annulus
     C_OUT = math.sqrt((MIN_BACK_COEFF*C_AP**2.) + C_IN**2.)
-    
-    bad = 0        
+
+    bad = 0
     box_dimx = star_box.shape[0]
     box_dimy = star_box.shape[1]
     if x_guess is None:
         x_guess = box_dimx / 2. - 0.5
     if y_guess is None:
         y_guess = box_dimy / 2. - 0.5
-                                     
+
     # Aperture radius
     aper_rmax = C_AP * fwhm_guess
 
@@ -794,22 +794,22 @@ def aperture_photometry(star_box, fwhm_guess, background_guess=None,
             x_guess, y_guess,
             0., aper_rmax, SUR_VAL_COEFF)
     # saved for clean output if return_surfaces is True
-    base_aperture_surface = np.copy(aperture_surface) 
-    
+    base_aperture_surface = np.copy(aperture_surface)
+
     aperture_surface[np.nonzero(np.isnan(star_box))] = 0.
     aperture = star_box * aperture_surface
     total_aperture = np.nansum(aperture)
-    
+
     # compute number of nans
     aperture[np.nonzero(aperture_surface == 0.)] = 0.
     aperture_nan_nb = np.sum(np.isnan(aperture))
-    
-    
+
+
     if np.nansum(aperture_surface) < MIN_APER_SIZE:
         if warn:
             warnings.warn('Not enough pixels in the aperture')
         return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
-    
+
     # Estimation of the background
     if background_guess is None:
         ann_rmin = math.floor(C_IN * fwhm_guess) + 0.5
@@ -828,9 +828,9 @@ def aperture_photometry(star_box, fwhm_guess, background_guess=None,
                     SUR_VAL_COEFF))
             # saved for clean output if return_surfaces is True
             base_annulus_surface= np.copy(annulus_surface)
-            
+
             annulus_surface[np.nonzero(annulus_surface < 1.)] = 0. # no partial pixels are used
-       
+
             if (np.sum(annulus_surface) >
                 float(MIN_BACK_COEFF) *  np.sum(aperture_surface)):
                 not_enough = False
@@ -848,13 +848,13 @@ def aperture_photometry(star_box, fwhm_guess, background_guess=None,
             # pixels distribution
             background, background_err = sky_background_level(
                 background_pixels, return_error=True)
-            
+
         else:
             background_pixels = orb.utils.stats.sigmacut(star_box)
             background = orb.utils.stats.robust_mean(background_pixels)
             background_err = (orb.utils.stats.robust_std(background_pixels)
                               / math.sqrt(np.size(background_pixels)))
-            
+
             if warn:
                 warnings.warn('Estimation of the background might be bad')
                 bad = 1
@@ -971,7 +971,7 @@ def multi_aperture_photometry(frame, pos_list, fwhm_guess_pix,
             star_box, fwhm_guess_pix[istar], aper_coeff=aper_coeff,
             return_surfaces=True, aperture_surface=aper_surf,
             annulus_surface=annu_surf)
-        
+
         results.append({'aperture_flux':photom_result[0],
                         'aperture_flux_err':photom_result[1],
                         'aperture_surface':photom_result[2],
@@ -1028,17 +1028,17 @@ def radial_profile(a, xc, yc, rmax):
     """Return the average radial profile on a region of a 2D array.
 
     :param a: A 2D array
-    
+
     :param xc: Center of the profile along x axis
-    
+
     :param yc: Center of the profile along y axis
-    
+
     :param rmax: Radius of the profile
 
     :return: (R axis, V axis). A tuple of 2 vectors giving the radius
       axis and the corresponding values axis.
     """
-    
+
     xmin = int(math.floor(xc-rmax))
     if xmin < 0: xmin = 0
     xmax = int(round(xc+rmax+1))
@@ -1058,7 +1058,7 @@ def radial_profile(a, xc, yc, rmax):
                 r_list[r] += list([v])
             else:
                 r_list[r] = list([v])
-            
+
     # reducing the list by averaging the values for each different radius
     reduced_r_list = list()
     for ir in r_list:
@@ -1100,7 +1100,7 @@ def sky_background_level(im, smooth_coeff=0.1, return_mode=False, bins=25,
     """
     sig_im = orb.utils.stats.sigmacut(im, sigma=2.5)
     hist, bin_edges = np.histogram(sig_im, bins=bins)
-    
+
     if np.size(hist) == 0.:
         warnings.warn(
             'Bad sky histogram: returning median of the distribution')
@@ -1162,14 +1162,14 @@ def dec2deg(dec):
         else:
             return dec[0] - dec[1]/60. - dec[2]/3600.
     else:
-        return None   
+        return None
 
 def deg2ra(deg, string=False):
     """Convert RA in degrees to sexagesimal.
 
     :param deg: RA in degrees
     """
-    
+
     deg=float(deg)
     ra = np.empty((3), dtype=float)
     deg = deg*24./360.
@@ -1220,22 +1220,22 @@ def transform_star_position_A_to_B(star_list_A, params, rc, zoom_factor,
     Optionally SIP distorsion parameters can be given.
 
     The transformation steps are::
-    
+
       dist_pix_camA -> perf_pix_camA -> geometric transformation_A2B
       -> perf_pix_camB -> dist_pix_camB
 
     :param star_list_A: List of star coordinates in the cube A.
-    
+
     :param params: Transformation parameters [dx, dy, dr, da, db].
-    
+
     :param rc: Rotation center coordinates.
-    
+
     :param zoom_factor: Zooming factor between the two cameras. Can be
       a couple (zx, zy).
-    
+
     :param sip_A: (Optional) pywcs.WCS instance containing SIP
       parameters of the frame A (default None).
-      
+
     :param sip_B: (Optional) pywcs.WCS instance containing SIP
       parameters of the frame B (default None).
     """
@@ -1245,7 +1245,7 @@ def transform_star_position_A_to_B(star_list_A, params, rc, zoom_factor,
     else:
         zx = float(zoom_factor)
         zy = float(zoom_factor)
-        
+
     if not isinstance(star_list_A, np.ndarray):
         star_list_A = np.array(star_list_A)
     if star_list_A.dtype != np.dtype(float):
@@ -1258,8 +1258,8 @@ def transform_star_position_A_to_B(star_list_A, params, rc, zoom_factor,
         #star_list_A = sip_pix2im(star_list_A, sip_A)
         ## star_list_A = sip_A.sip.pix2foc(star_list_A) + sip_A.wcs.crpix
         raise Exception('must be checked')
-        
-        
+
+
     # geometric transformation_A2B
     if np.any(params):
         for istar in range(star_list_A.shape[0]):
@@ -1269,12 +1269,12 @@ def transform_star_position_A_to_B(star_list_A, params, rc, zoom_factor,
                 rc[0], rc[1], zx, zy)
     else:
         star_list_B = np.copy(star_list_A)
-        
+
     # perf_pix_camB -> dist_pix_camB
     if sip_B is not None:
         ## star_list_B = sip_im2pix(star_list_B, sip_B)
         raise Exception('must be checked')
-        
+
     return star_list_B
 
 
@@ -1283,7 +1283,7 @@ def get_profile(profile_name):
 
     :param profile name: The name of the PSF profile. Must be 'moffat'
       or 'gaussian'.
-    
+
     """
     if profile_name == 'gaussian':
         return Gaussian
@@ -1310,14 +1310,14 @@ def fit_stars_in_frame(frame, star_list, box_size,
 
     ## WARNING : DO NOT CHANGE THE ORDER OF THE ARGUMENTS OR TAKE CARE
     ## OF THE CALL IN astrometry.Astrometry.fit_stars_in_cube()
-  
+
     """Fit stars in a frame.
 
     .. note:: 2 fitting modes are possible:
-    
+
       * Individual fit mode [multi_fit=False]: Stars are all fit
         independantly.
-      
+
       * Multi fit mode [multi_fit=True]: Stars are fitted all together
         considering that the position pattern is well known, the same
         shift in x and y will be applied. Optionally the pattern can be
@@ -1370,7 +1370,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
 
     :param fwhm_min: (Optional) Minimum valid FWHM of the fitted star
       (default 0.5)
-      
+
     :param silent: (Optional) If True no messages are printed (default
       True).
 
@@ -1395,11 +1395,11 @@ def fit_stars_in_frame(frame, star_list, box_size,
       more precise but this can lead to errors if the stars positions
       are not already well known. Valid only in individual fit mode
       [multi_fit=False] (default False).
-          
+
     :param readout_noise: (Optional) Readout noise in ADU/pixel (can
       be computed from bias frames: std(master_bias_frame)) (default
       10.)
-    
+
     :param dark_current_level: (Optional) Dark current level in
       ADU/pixel (can be computed from dark frames:
       median(master_dark_frame)) (default 0.)
@@ -1449,7 +1449,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
       value is used in the fit functions and will be fixed for fit and
       aperture photometry. Note also that in this case
       local_background is automatically set to False (default None).
-    
+
     :return: Parameters of a 2D fit of the stars positions.
 
     .. seealso:: :py:meth:`astrometry.Astrometry.load_star_list` to load
@@ -1463,16 +1463,16 @@ def fit_stars_in_frame(frame, star_list, box_size,
     """
     BOX_COEFF = 7. # Coefficient to redefine the box size if the
                    # fitted FWHM is too large
-    
+
     BIG_BOX_COEFF = 4. # Coefficient to apply to create a bigger box
                        # than the normal star box. This box is used for
                        # background determination and aperture
                        # photometry
-                       
+
     BLUR_FWHM = 3.5   # FWHM of the gaussian kernel used to blur frames
     BLUR_DEG = int(math.ceil(
         BLUR_FWHM * 2. / (2. * math.sqrt(2. * math.log(2.)))))
-    
+
     dimx = frame.shape[0]
     dimy = frame.shape[1]
 
@@ -1488,11 +1488,11 @@ def fit_stars_in_frame(frame, star_list, box_size,
         else: fix_height = True
 
     frame_median = bn.nanmedian(frame)
-    
+
     if frame_median < 0.:
         frame -= frame_median
         warnings.warn('frame median is < 0 ({}), a value of {} has been subtracted to have a median at 0.'.format(frame_median, frame_median))
-    
+
     ## Frame background determination if wanted
     background = None
     cov_height = False
@@ -1510,7 +1510,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
             fix_height = True
         else:
             cov_height = True
-    
+
     ## Blur frame to avoid undersampled data
     if blur:
         fit_frame = np.copy(utils.image.low_pass_image_filter(
@@ -1523,7 +1523,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
     if not no_fit:
         if multi_fit:
             if saturation is None: saturation = 0
-            
+
             fit_params = orb.cutils.multi_fit_stars(
                 np.array(fit_frame, dtype=float), np.array(star_list), box_size,
                 height_guess=np.array(background, dtype=np.float),
@@ -1541,14 +1541,14 @@ def fit_stars_in_frame(frame, star_list, box_size,
                 enable_rotation=enable_rotation,
                 estimate_local_noise=estimate_local_noise,
                 saturation=saturation, sip=sip)
-                
+
             # save results as a StarsParams instance
             for istar in range(star_list.shape[0]):
                 if fit_params != []:
                     star_params = dict()
                     p = fit_params['stars-params'][istar, :]
                     e = fit_params['stars-params-err'][istar, :]
-                    
+
                     star_params['height'] = p[0]
                     star_params['height_err'] = e[0]
                     star_params['amplitude'] = p[1]
@@ -1565,7 +1565,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
                     star_params['chi-square'] = fit_params['chi-square']
                     star_params['reduced-chi-square'] = fit_params[
                         'reduced-chi-square']
-                    
+
                     star_params['flux'] = (
                         get_profile(profile_name))(
                         star_params).flux()
@@ -1582,18 +1582,18 @@ def fit_stars_in_frame(frame, star_list, box_size,
                     star_params['cov_zy'] = fit_params['cov_zy']
                     star_params['cov_dx'] = fit_params['cov_dx']
                     star_params['cov_dy'] = fit_params['cov_dy']
-                    
+
                     if scale is not None:
                         star_params['fwhm_arc'] = (
                             float(star_params['fwhm_pix']) * scale)
                         star_params['fwhm_arc_err'] = (
                             float(star_params['fwhm_err']) * scale)
-                    
+
                     fit_results.append(dict(star_params))
                 else:
                     fit_results.append(None)
         else:
-            for istar in range(star_list.shape[0]):        
+            for istar in range(star_list.shape[0]):
                 ## Create fit box
                 guess = star_list[istar,:]
                 if guess.shape[0] == 2:
@@ -1685,10 +1685,10 @@ def fit_stars_in_frame(frame, star_list, box_size,
     else: # if no_fit fit_results is filled with None
         for istar in range(star_list.shape[0]):
             fit_results.append(None)
-        
+
     ## Compute aperture photometry
     if not no_aperture_photometry:
-        
+
         if not no_fit:
             # get mean FWHM in the frame
             if fix_aperture_fwhm_pix is not None:
@@ -1709,13 +1709,13 @@ def fit_stars_in_frame(frame, star_list, box_size,
         ## Local background determination for aperture
         if local_background:
             background = None
-        
+
         # get aperture given the mean FWHM
         for istar in range(star_list.shape[0]):
             if (fit_results[istar] is not None) or (no_fit):
                 new_box_size = BOX_COEFF * mean_fwhm
                 aperture_box_size = BIG_BOX_COEFF * max(box_size, new_box_size)
-               
+
                 if not no_fit:
                     ix = fit_results[istar]['x']
                     iy = fit_results[istar]['y']
@@ -1727,11 +1727,11 @@ def fit_stars_in_frame(frame, star_list, box_size,
                      y_min, y_max) = orb.utils.image.get_box_coords(
                         ix, iy, aperture_box_size, 0, dimx, 0, dimy)
                     star_box = frame[x_min:x_max, y_min:y_max]
-                    
+
                     photom_result = aperture_photometry(
                         star_box, mean_fwhm, background_guess=background,
                         aper_coeff=aper_coeff)
-                    
+
                     if no_fit:
                         fit_params = {'aperture_flux':photom_result[0],
                                       'aperture_flux_err':photom_result[1],
@@ -1739,7 +1739,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
                                       'aperture_flux_bad':photom_result[3],
                                       'aperture_background':photom_result[4],
                                       'aperture_background_err':photom_result[5]}
-                        
+
                         fit_results[istar] = fit_params
 
                     else:
@@ -1755,9 +1755,9 @@ def fit_stars_in_frame(frame, star_list, box_size,
                             photom_result[4])
                         fit_results[istar]['aperture_background_err'] = (
                             photom_result[5])
-                        
-                    
-        
+
+
+
     ## Print number of fitted stars
     if not silent:
         logging.info("%d/%d stars fitted" %(len(fitted_stars_params), star_list.shape[0]))
@@ -1829,13 +1829,13 @@ def fit_sip(dimx, dimy, scale, star_list1, star_list2, params=None, init_sip=Non
             p += list(sip.sip.bp.flatten())
         return p
 
-    def diff(p, star_list2, star_list_deg1, 
+    def diff(p, star_list2, star_list_deg1,
              params, sip, err, direct):
         sip = p2sip(p, sip, direct)
         try:
             if direct:
                 star_list_1t = sip.all_world2pix(star_list_deg1, 0)
-            
+
                 ## star_list_1t = transform_star_position_A_to_B(
                 ##     star_list1, params[:5],
                 ##     (params[5], params[6]),
@@ -1848,7 +1848,7 @@ def fit_sip(dimx, dimy, scale, star_list1, star_list2, params=None, init_sip=Non
             else:
                 star_list_2t = sip.all_pix2world(star_list2, 0)
                 star_list_2t = sip.all_world2pix(star_list_2t, 0)
-                            
+
                 dx = (star_list_2t - star_list2)[:,0]
                 dy = (star_list_2t - star_list2)[:,1]
 
@@ -1880,7 +1880,7 @@ def fit_sip(dimx, dimy, scale, star_list1, star_list2, params=None, init_sip=Non
     if init_sip is None:
         if crpix is None or crval is None:
             raise Exception('If an initial wcs is not given (init_sip set to None) CRPIX and CRVAL must be given.')
-        
+
         init_sip = create_wcs(crpix[0], crpix[1],
                               scale / 3600., scale / 3600.,
                               crval[0], crval[1], 0.)
@@ -1888,7 +1888,7 @@ def fit_sip(dimx, dimy, scale, star_list1, star_list2, params=None, init_sip=Non
         init_sipt = pywcs.WCS(init_sip.to_header(relax=True))
         init_sipt.sip = copy.copy(init_sip.sip)
         init_sip = init_sipt
-        
+
     if init_sip.sip is None:
         init_sip = add_sip(init_sip)
 
@@ -1929,12 +1929,12 @@ def fit_sip(dimx, dimy, scale, star_list1, star_list2, params=None, init_sip=Non
         new_wcs = p2sip(fit[0], init_sip, False)
         new_wcs.wcs.cd = np.dot(np.diag(new_wcs.wcs.get_cdelt()),
                                 new_wcs.wcs.get_pc())
-            
+
         return new_wcs
 
     else:
         raise Exception('SIP reverse transformation fit failed')
-    
+
 
 def histogram_registration(star_list1, star_list2, dimx, dimy, xy_bins):
     """Fast histogram registration of an image based on the comparison
@@ -1968,7 +1968,7 @@ def histogram_registration(star_list1, star_list2, dimx, dimy, xy_bins):
     max_dx = hist_bins[max_index[0]] - dimx / 2.
     max_dy = hist_bins[max_index[1]] - dimx / 2.
 
-    return max_corr, max_dx, max_dy    
+    return max_corr, max_dx, max_dy
 
 
 def create_wcs(target_x, target_y, deltax, deltay, target_ra,
@@ -1998,12 +1998,12 @@ def create_wcs(target_x, target_y, deltax, deltay, target_ra,
 
     _wcs = pywcs.WCS(naxis=2) # a new WCS must be created. Never update
                              # an old WCS!
-        
+
     _wcs.wcs.crpix = [target_x, target_y]
     _wcs.wcs.cdelt = np.array([-deltax, deltay])
     _wcs.wcs.crval = [target_ra, target_dec]
     # !! must stay here because get_pc does not work with RA---TAN-SIP type
-    _wcs.wcs.ctype = ["RA---TAN", "DEC--TAN"] 
+    _wcs.wcs.ctype = ["RA---TAN", "DEC--TAN"]
     _wcs.wcs.crota = [rotation, rotation]
     # force wcs to CD definition (for SIP)
     _wcs.wcs.cd = np.dot(
@@ -2035,7 +2035,7 @@ def get_wcs_parameters(_wcs):
         rotation = np.rad2deg(np.arctan2(-cd[0,1], -cd[0,0]))
         deltax = - cd[0,0] / np.cos(np.deg2rad(rotation))
         deltay = - cd[0,1] / np.sin(np.deg2rad(rotation))
-        
+
     except AttributeError: # no cd is present
         pc = np.copy(_wcs.wcs.get_pc())
         deltax, deltay = _wcs.wcs.cdelt
@@ -2052,7 +2052,7 @@ def get_wcs_parameters(_wcs):
     if abs(rotation) > 90. : raise StandardError('rotation angle is {} must be < 90. There must be an error.'.format(rotation))
     if not np.allclose(deltax, deltay): raise StandardError('deltax ({}) must be equal to deltay ({})'.format(deltax, deltay))
     deltay = float(deltax)
-    
+
     return target_x, target_y, deltax, deltay, target_ra, target_dec, rotation
 
 def brute_force_guess(image, star_list, x_range, y_range, r_range,
@@ -2090,7 +2090,7 @@ def brute_force_guess(image, star_list, x_range, y_range, r_range,
     def get_total_flux(guess_list, image, star_list,
                        rc, zoom_factor, box_size, kernel, _wcs_str, _wcsp):
         """Return the sum of the flux around a transformed list of
-        star positions for a list of parameters.        
+        star positions for a list of parameters.
         """
         if _wcs_str is None:
             _wcs = None
@@ -2101,7 +2101,7 @@ def brute_force_guess(image, star_list, x_range, y_range, r_range,
         if _wcsp is not None and _wcs is not None:
             (target_x, target_y, deltax, deltay,
              target_ra, target_dec, rotation) = _wcsp
-                
+
         for ik in range(guess_list.shape[0]):
             guess = (guess_list[ik, 0],
                      guess_list[ik, 1],
@@ -2137,7 +2137,7 @@ def brute_force_guess(image, star_list, x_range, y_range, r_range,
             result[ik, 0] = total_flux
             result[ik, 1:] = guess_list[ik]
         return result
-    
+
     if init_wcs is not None and rc is not None:
         warnings.warn('rc must be set to None if a wcs is given. rc automatically set to None.')
         rc = None
@@ -2203,7 +2203,7 @@ def brute_force_guess(image, star_list, x_range, y_range, r_range,
 
     # parallel processing of each guess list part
     jobs = [(ijob, job_server.submit(
-        get_total_flux, 
+        get_total_flux,
         args=(pguess_lists[ijob], image,
               star_list, rc, zoom_factor,
               box_size, kernel, init_wcs_str, wcs_params),
@@ -2256,7 +2256,7 @@ def brute_force_guess(image, star_list, x_range, y_range, r_range,
             or dr == np.min(r_range)
             or dr == np.max(r_range)):
             raise Exception('Brute force maximum found on grid border !')
-        
+
 
     return dx, dy, dr, np.squeeze(guess_matrix)
 
@@ -2287,14 +2287,14 @@ def world2pix(hdr, dimx, dimy, star_list_deg, dxmap, dymap):
         np.linspace(0, dimx, dxmap.shape[0]),
         np.linspace(0, dimy, dxmap.shape[1]),
         dxmap, kx=3, ky=3)
-    
+
     dyspl = interpolate.RectBivariateSpline(
         np.linspace(0, dimx, dymap.shape[0]),
         np.linspace(0, dimy, dymap.shape[1]),
         dymap, kx=3, ky=3)
 
     wcs = pywcs.WCS(hdr, relax=True)
-    
+
     star_list_pix = np.array(
         wcs.all_world2pix(
             star_list_deg[:,0],
@@ -2312,7 +2312,7 @@ def world2pix(hdr, dimx, dimy, star_list_deg, dxmap, dymap):
 
     return star_list_pix
 
-    
+
 def pix2world(hdr, dimx, dimy, star_list_pix, dxmap, dymap):
     """Convert pixel positions to RA/DEC coordinates.
 
@@ -2338,7 +2338,7 @@ def pix2world(hdr, dimx, dimy, star_list_pix, dxmap, dymap):
         np.linspace(0, dimx, dxmap.shape[0]),
         np.linspace(0, dimy, dxmap.shape[1]),
         dxmap, kx=3, ky=3)
-    
+
     dyspl = interpolate.RectBivariateSpline(
         np.linspace(0, dimx, dymap.shape[0]),
         np.linspace(0, dimy, dymap.shape[1]),
@@ -2370,7 +2370,7 @@ def realign_images(_cube):
     .. warning:: This procedure is robust but very slow. Do not use it
       to realign a large number of images.
     """
-    
+
     im1 = _cube[:,:,0]
     dimz = _cube.shape[2]
     src1_list = np.nonzero(im1 > np.nanpercentile(im1, 99.9))

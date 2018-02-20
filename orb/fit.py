@@ -4,7 +4,7 @@
 # File: fit.py
 
 ## Copyright (c) 2010-2017 Thomas Martin <thomas.martin.1@ulaval.ca>
-## 
+##
 ## This file is part of ORB
 ##
 ## ORB is free software: you can redistribute it and/or modify it
@@ -22,14 +22,14 @@
 
 """Fit module of ORB.
 
-Defines the general Fitting classes and the fitting models. 
+Defines the general Fitting classes and the fitting models.
 
 Best accessed through fit_lines_in_*() functions (defined at the end
 of the file)
 """
 
 __author__ = "Thomas Martin"
-__licence__ = "Thomas Martin (thomas.martin.1@ulaval.ca)"       
+__licence__ = "Thomas Martin (thomas.martin.1@ulaval.ca)"
 
 
 import numpy as np
@@ -67,7 +67,7 @@ class FitVector(object):
       in passing an array of purely free parameters to
       :py:meth:`scipy.optimize.leastsq` and creating the objective
       function from free and fixed parameters by combining the
-      different models. 
+      different models.
     """
 
     models = None
@@ -79,7 +79,7 @@ class FitVector(object):
 
     max_fev = 5000
     fit_tol = None
-    
+
     def __init__(self, vector, models, params, snr_guess=None,
                  fit_tol=1e-8, signal_range=None, classic=False,
                  max_iter=None):
@@ -87,7 +87,7 @@ class FitVector(object):
         Init class.
 
         :param vector: Vector to fit
-        
+
         :param models: list of models to combine. Must be a list of
           couples (models, model_operation). A model must be a class
           which derives from :py:class:`orb.fit.Model`. Model
@@ -109,7 +109,7 @@ class FitVector(object):
 
         :param classic: (Optional) If True, fit is forced to be
           classic. i.e. It makes no use of the priors std (default False).
-        """       
+        """
         if not isinstance(models, tuple) and not isinstance(models, list) :
             raise ValueError('models must be a tuple of (model, model_operation).')
 
@@ -147,14 +147,14 @@ class FitVector(object):
                     raise Exception('SNR guess is {} but it must be a single number'.format(type(snr_guess)))
                 self.snr_guess = np.fabs(snr_guess)
         else: self.snr_guess = None
-        
+
         self.retry_count = 0
         self.models = list()
         self.models_operation = list()
         self.priors_list = list()
         self.priors_keys_list = list()
         params = utils.fit.pick2paramslist(params)
-        
+
         for i in range(len(models)):
             # init each model
             self.models.append(models[i][0](params[i]))
@@ -167,15 +167,15 @@ class FitVector(object):
             self.priors_list.append(self.models[-1].get_priors(self.classic))
             self.priors_keys_list.append(self.priors_list[-1].keys())
         self.all_keys_index = None
-        
+
         if signal_range is not None:
             if (np.nanmin(signal_range) >= 0 and
                 np.nanmax(signal_range) < self.vector.shape[0]):
                 self.signal_range = [int(np.min(signal_range)),
                                      int(np.max(signal_range))]
-            
+
             else: raise Exception('Bad signal range: {}'.format(signal_range))
-        else: self.signal_range = None    
+        else: self.signal_range = None
 
     def _all_p_list2dict(self, p_list):
         """Concatenate a list of free parameters into a dictionary
@@ -244,13 +244,13 @@ class FitVector(object):
                 index += 1
         if all_keys_index.viewkeys() != p_dict.viewkeys(): raise Exception(
             'Badly formatted input dict')
-        
+
         self.all_keys_index = all_keys_index # save keys--index dict
 
         p_arr = np.empty(len(self.all_keys_index), dtype=float)
         for key in self.all_keys_index:
             p_arr[self.all_keys_index[key]] = gvar.mean(p_dict[key])
-            
+
         return p_arr
 
     def _all_p_arr2dict(self, p_arr, keep_gvar=False):
@@ -277,7 +277,7 @@ class FitVector(object):
             p_dict[key] = ival
 
         return p_dict
-        
+
     def get_model(self, all_p_free, return_models=False, x=None):
         """Return the combined model of the vector given a set of free
         parameters.
@@ -302,17 +302,17 @@ class FitVector(object):
         for ikey in all_p_free:
             if np.isnan(gvar.sdev(all_p_free[ikey])):
                 warnings.warn('nan in passed parameters: {}'.format(all_p_free))
-    
+
         step_nb = self.vector.shape[0]
         if x is None:
             x = np.arange(step_nb, dtype=float)
-       
+
         if return_models:
             models = dict()
         else:
             models = list()
         all_p_list = self._all_p_dict2list(all_p_free)
-        
+
         # all multiplicative models must be multiplied together before
         # beging applied to the the additive models using the
         # dedicated class option (because multiplication by a filter
@@ -343,12 +343,12 @@ class FitVector(object):
                     model_to_append = model_list
 
                 if self.classic: model_to_append = gvar.mean(model_to_append)
-                
+
                 if model is None:
                     model = model_to_append
                 else:
                     model += model_to_append
-    
+
         if np.any(np.isnan(gvar.mean(model))):
             warnings.warn('Nan in model')
 
@@ -356,7 +356,7 @@ class FitVector(object):
             return model, models
         else:
             return model
-    
+
     def _get_model_onrange(self, x, *all_p_free):
         """Return the part of the model contained in the signal
         range.
@@ -423,11 +423,11 @@ class FitVector(object):
 
 
         MCMC_RANDOM_COEFF = 1e-2
-        
+
         start_time = time.time()
         priors_dict = self._all_p_list2dict(self.priors_list)
 
-                        
+
         ### CLASSIC MODE ##################
         if self.classic:
             
@@ -445,13 +445,13 @@ class FitVector(object):
             except RuntimeError, e:
                 logging.debug('RuntimeError during fit: {}'.format(e))
                 fit_classic = list(['Runtime error during fit: {}'.format(e), 0])
-                
+
             fit = type('fit', (), {})
-            
+
             if 0 < fit_classic[-1] < 5:
                 fit.stopping_criterion = fit_classic[-1]
                 fit.error = None
-                
+
                 # compute uncertainties
                 cov_x = fit_classic[1]
                 if np.all(np.isfinite(cov_x)):
@@ -489,20 +489,20 @@ class FitVector(object):
                 raise Exception('No SNR guess. This fit must be made in classic mode')
 
             fit = lsqfit.nonlinear_fit(**fit_args(self.snr_guess))
-            
+
             fitted_vector = gvar.mean(self.get_model(fit.p))
             residual = (self.vector - fitted_vector)[
                 np.min(self.signal_range):np.max(self.signal_range)]
-            
+
         ### fit results formatting ###
         if fit.error is None:
             fit_p = fit.p
-            
+
             # correct for normalization coeff
             for key in fit_p.keys():
                 if 'amp' in key or 'cont_p' in key:
                     fit_p[key] = fit_p[key] * self.normalization_coeff
-                    
+
             if fit.stopping_criterion == 0:
                 logging.debug('Dit not converge: stopping criterion == 0')
                 warnings.warn('Did not converge')
@@ -527,8 +527,8 @@ class FitVector(object):
             full_p_list = list()
             full_p_list_err = list()
             full_p_list_gvar = list()
-            
-            
+
+
             p_fit_list = self._all_p_dict2list(fit_p)
             for i in range(len(self.models)):
                 # recompute p_val from new p_free
@@ -537,20 +537,20 @@ class FitVector(object):
                 full_p_list.append(gvar.mean(_ipval))
                 full_p_list_err.append(gvar.sdev(_ipval))
                 full_p_list_gvar.append(_ipval)
-                
+
             returned_data['fit_params'] = full_p_list
             returned_data['fit_params_err'] = full_p_list_err
             returned_data['fit_params_gvar'] = full_p_list_gvar
 
-            
+
             ## compute error on parameters
             # compute reduced chi square
             returned_data['rchi2'] = fit.chi2 / fit.dof
             returned_data['rchi2_err'] = np.sqrt(2./self._get_vector_onrange().shape[0])
             returned_data['rchi2_gvar'] = gvar.gvar(returned_data['rchi2'],
                                                     returned_data['rchi2_err'])
-            
-            
+
+
             returned_data['chi2'] = fit.chi2
             returned_data['residual'] = residual
             # kolmogorov smirnov test: if p_value < 0.05 residual is not normal
@@ -566,13 +566,13 @@ class FitVector(object):
 
             returned_data['logGBF'] = fit.logGBF
             returned_data['fit_time'] = time.time() - start_time
-            
+
         else:
             logging.debug('bad fit')
             return []
 
         return returned_data
-        
+
 
 
 class Model(object):
@@ -619,7 +619,7 @@ class Model(object):
       parameter for each group of covarying parameters) = 5 and the
       real number of fixed parameters will be 2 + 5 (one fixed
       parameter for each covarying parameters) = 7.
-      
+
 
       A Model class works this way :
 
@@ -630,14 +630,14 @@ class Model(object):
          created. Then :py:meth:`fit.Model.val2free` is called to
          create :py:attr:`fit.Model.p_free` and
          :py:attr:`fit.Model.p_fixed`.
-      
+
       2. the set of free parameters can then be changed with
          :py:meth:`fit.Model.set_p_free` before calling
          :py:meth:`fit.Model.get_model`. the updated values of
          :py:attr:`fit.Model.p_val` are computed before the model is created via
          :py:meth:`fit.Model.free2val`. A new set of free parameters
          can also be passed to :py:meth:`fit.Model.get_model`.
-      
+
 
     """
     accepted_keys = ()
@@ -655,15 +655,15 @@ class Model(object):
     """Array of fixed parameters. Each covarying parameter is stored
     as fixed. And one free parameter is added for each group of
     covarying parameters."""
-    
+
     p_dict = None
     """Input dictionary defining the parameters. Contains the initial
     values of the parameters"""
-    
+
     p_def = None
     """Definition the full set of parameters (fixed, free or
     covarying). This array as the same shape as :py:attr:`fit.Model.p_val`"""
-    
+
     p_val = None
     """Up to date values of the full set of parameters used by the model
     (initial guess before fit, fitted value after fit). This array as
@@ -685,7 +685,7 @@ class Model(object):
 
         :param p_dict: Input dictionary defining the parameters of the
           model.
-        
+
         parameters definition can be : 'free', 'fixed' or covarying
         (in this case any string label can be used to define a group
         of covarying parameters)
@@ -707,14 +707,14 @@ class Model(object):
             for key in self.p_dict.keys():
                 if key not in self.accepted_keys:
                     raise Exception('Input dictionary contains unknown key: {}'.format(key))
-        
+
             self.parse_dict()
         else: raise ValueError('p must be a dict')
 
-        
+
         # check input parameters
         self.check_input()
-        
+
         # create free and fixed vectors
         self.val2free()
         if len(self.unused_keys) != 0:
@@ -763,7 +763,7 @@ class Model(object):
             for key in priors:
                 priors[key] = gvar.mean(priors[key])
             return priors
-        
+
     def set_p_free(self, p_free):
         """Set the vector of free parameters :py:attr:`fit.Model.p_free`
 
@@ -789,14 +789,14 @@ class Model(object):
           or :py:meth:`fit.Model.free2val` will recompute
           :py:attr:`fit.Model.p_val` from the init values and the
           actual :py:attr:`fit.Model.p_free`.
-        
+
         :param p_val: New full set of parameters.
         """
         if p_val.viewkeys() == self.p_val.viewkeys():
             self.p_val = copy.copy(p_val)
             self.val2free()
         else: raise Exception('bad format of passed val parameters')
-        
+
     def val2free(self):
         """Recompute the set of free parameters
         :py:attr:`fit.Model.p_free` with the updated values of
@@ -819,15 +819,15 @@ class Model(object):
         # check if p_free has a sdev
         for idef in self.p_free:
             if self.p_free[idef] is not None:
-                if gvar.sdev(self.p_free[idef]) == 0.: 
+                if gvar.sdev(self.p_free[idef]) == 0.:
                     self.p_free[idef] = self._estimate_sdev(
                         idef, gvar.mean(self.p_free[idef]))
 
         # remove sdev from p_fixed
         for idef in self.p_fixed:
             if self.p_fixed[idef] is not None:
-                self.p_fixed[idef] = gvar.mean(self.p_fixed[idef]) 
-        
+                self.p_fixed[idef] = gvar.mean(self.p_fixed[idef])
+
     def free2val(self):
         """Read the array of parameters definition
         :py:attr:`fit.Model.p_def` and update the parameter values
@@ -853,7 +853,7 @@ class Model(object):
                 # covarying operation
                 self.p_val[idef] = self.p_cov[self.p_def[idef]][1](
                     self.p_fixed[idef], passed_cov[self.p_def[idef]])
-                
+
 class FilterModel(Model):
     """
     Simple model of filter based on a real filter shape. The only
@@ -867,9 +867,9 @@ class FilterModel(Model):
 
     :keyword filter_function: Transmission of the filter over the
       fitted spectral range (axis must be exactly the same).
-      
+
     :keyword shift_guess: Guess on the filter shift in pixels.
-    
+
     :keyword shift_def: Definition of the shift parameter, can be
       'free' or 'fixed'
 
@@ -893,7 +893,7 @@ class FilterModel(Model):
                 self.filter_axis, self.filter_function,
                 k=1, s=0, ext=1)
             self.unused_keys.pop('filter_function')
-        else: 
+        else:
             raise Exception('filter_function must be given')
 
         if 'shift_guess' in self.p_dict:
@@ -901,14 +901,14 @@ class FilterModel(Model):
             self.unused_keys.pop('shift_guess')
         else: shift_guess = 0.
         self.p_val = {'filter_shift': shift_guess}
-        
+
         if 'shift_def' in self.p_dict:
             shift_def = self.p_dict['shift_def']
             self.unused_keys.pop('shift_def')
         else:
             shift_def = 'free'
         self.p_def = {'filter_shift': shift_def}
-        
+
         self.p_cov = dict()
 
     def check_input(self):
@@ -928,13 +928,13 @@ class FilterModel(Model):
 
         :param p_free: (Optional) New values of the free parameters
           (default None).
-          
+
         :param return_models: (Optional) If True return also
           individual models (default False)
         """
         if p_free is not None:
             self.set_p_free(p_free)
-            
+
         self.free2val()
         if len(self.p_free) == 0:
             mod = copy.copy(self.filter_function(self.filter_axis))
@@ -984,7 +984,7 @@ class ContinuumModel(Model):
         :param key: Key to get line number from.
         """
         return int(key[6:])
-        
+
     def get_p_val_as_array(self, p_val=None):
         if p_val is None:
             if p_val.viewkeys() == self.p_val.viewkeys():
@@ -996,10 +996,10 @@ class ContinuumModel(Model):
         for ipar in p_val:
             i = self._get_order_from_key(ipar)
             ans[i] = p_val[ipar]
-            
+
         return ans
-    
-    
+
+
     def parse_dict(self):
         """Parse input dictionary :py:attr:`fit.Model.p_dict`"""
         if 'poly_order' in self.p_dict:
@@ -1008,7 +1008,7 @@ class ContinuumModel(Model):
         else: self.poly_order = 0
 
         self.p_val = dict()
-        self.p_def = dict()    
+        self.p_def = dict()
         self.p_cov = dict() # no covarying parameters
 
         for ip in range(self.poly_order + 1):
@@ -1054,13 +1054,13 @@ class ContinuumModel(Model):
 
         :param multf: 1d vector with the same length as x vector which
           represent the function by which the model must be multiplied.
-          
+
         :param return_models: (Optional) If True return also
           individual models (default False)
         """
         if p_free is not None:
             self.set_p_free(p_free)
-            
+
         self.free2val()
         coeffs = [self.p_val[self._get_ikey(ip)] for ip in range(self.poly_order + 1)]
         mod = np.polyval(coeffs, x)
@@ -1084,7 +1084,7 @@ class ContinuumModel(Model):
             return mod, (mod)
         else:
             return mod
-        
+
 class LinesModel(Model):
     """
     Emission/absorption lines model with a channel unity in pixels.
@@ -1104,7 +1104,7 @@ class LinesModel(Model):
       some fixed transition ratios between lines can also be set
       (e.g. [NII]6584/[NII]6548 can be set to 2.89, when [NII]6548 is
       likely to be really noisy).
-    
+
     Input dictionary :py:attr:`fit.Model.p_dict`::
 
       {'line_nb':,
@@ -1179,7 +1179,7 @@ class LinesModel(Model):
     :keyword fwhm_guess: Initial guess on the FWHM of the lines. This
       guess must be the MOST PRECISE possible (to a few 10%), it is by
       far the most unstable parameter especially for sinc lines.
-     
+
     :keyword sigma_guess: Initial guess on the value of sigma. Best
       set to 0. in general
 
@@ -1190,10 +1190,10 @@ class LinesModel(Model):
     netween [NII] lines, the same speed for lines issued from the same
     ions and a shared FWHM between everybody but Halpha would be
     defined this way::
-    
+
       {'line_nb' : 5,
        'amp_def' : ('1', 'free', '1', 'free', 'free'),
-       'pos_def' : ('1', '2', '1', '3', '3'), 
+       'pos_def' : ('1', '2', '1', '3', '3'),
        'fwhm_def': ('1', '2', '1', '1', '1'),
        'amp_cov': 0.,
        'pos_cov': 5.5,
@@ -1204,19 +1204,19 @@ class LinesModel(Model):
 
     .. note::
       Line shapes (fmodel keyword):
-      
+
       * **gaussian**: A classical gaussian line shape. See :py:meth:`cutils.gaussian1d`.
-      
+
       * **sinc**: A pure sinc line shape, True interferometric line shape
         if lines are strongly unresolved and if the interferometer has
         no assymetry (generally good on SITELLE/SpIOMM low res cubes
         --i.e. less than 500 steps-- if the line SNR is not too high
         --i.e. < 50--). See :py:meth:`cutils.sinc1d`.
-      
+
       * **sinc2**: sinc2 = sqrt(sinc**2.). Can be used for spectra not
         corrected in phase (where the absolute value of the complex
         spectrum is taken).
-      
+
       * **sincgauss**: Convolution of a Gaussian (of width **sigma**) and
         a sinc (FWHM). This line shape has a 4th parameter:
         sigma. This is much closer to the true line shape, but it
@@ -1224,7 +1224,7 @@ class LinesModel(Model):
         small value of sigma. This can be used to fit resolved lines,
         like e.g. Halpha in absorption or active nucleus with broader
         emission. See :py:meth:`cutils.sincgauss1d`.
-      
+
     """
 
     accepted_keys = ('line_nb',
@@ -1305,15 +1305,15 @@ class LinesModel(Model):
                 ans[iline, 2] = p_val[ipar]
             if self._get_fmodel() in ['sincgauss', 'sincgaussphased']:
                 if 'sigma' in ipar:
-                    ans[iline, 3] = p_val[ipar]    
+                    ans[iline, 3] = p_val[ipar]
             if self._get_fmodel() in ['sincphased']:
                 if 'alpha' in ipar:
                     ans[iline, 3] = p_val[ipar]
             if self._get_fmodel() in ['sincgaussphased']:
                 if 'alpha' in ipar:
                     ans[iline, 4] = p_val[ipar]
-            
-        return ans    
+
+        return ans
 
     def get_priors(self, classic):
         """Return priors. Replace gaussian distribution by lognormal
@@ -1343,15 +1343,15 @@ class LinesModel(Model):
                     ##     val, gvar.sdev(p_free[ip])))
                     ## priors['erfinv({})'.format(ip)] = gvar.gvar(
                     ##     val, gvar.sdev(p_free[ip])) / gvar.sqrt(2)
-                                
+
                     del priors[ip]
                     continue
         return priors
-    
-        
+
+
     def parse_dict(self):
         """Parse input dictionary :py:attr:`fit.Model.p_dict`"""
-        
+
         def parse_param(key, cov_operation):
 
             key_guess = key + '_guess'
@@ -1370,8 +1370,8 @@ class LinesModel(Model):
             else:
                 for iline in range(line_nb):
                     p_guess[self._get_ikey(key, iline)] = None
-                                                
-            ## parse cov  
+
+            ## parse cov
             if key_cov in self.p_dict:
                 utils.validate.is_iterable(self.p_dict[key_cov], object_name=key_cov)
                 p_cov = np.atleast_1d(self.p_dict[key_cov])
@@ -1387,31 +1387,31 @@ class LinesModel(Model):
 
                 for iline in range(line_nb):
                     p_def[self._get_ikey(key, iline)] = self.p_dict[key_def][iline]
-                    
+
                 # manage cov values
                 for iline in range(line_nb):
                     if p_def[self._get_ikey(key, iline)] not in ['free', 'fixed']:
                         cov_symbol = str(key_def + str(p_def[self._get_ikey(key, iline)]))
                         # create singular symbol
                         p_def[self._get_ikey(key, iline)] = cov_symbol
-                        
+
                         # fill cov dict
                         if cov_symbol not in p_cov_dict:
                             if p_cov is None:
                                 # todo: set it to a covarying value
                                 # which depends on the parameter
                                 # operation (amp=1, others=0)
-                                cov_value = 0. 
+                                cov_value = 0.
                             else:
                                 if np.size(p_cov) > 0:
                                     cov_value = p_cov[0]
                                 else:
                                     raise TypeError("not enough covarying parameters: {} must have the same size as the number of covarying parameters".format(key_cov))
                                 p_cov = p_cov[1:] # used cov values are dumped
-                    
+
                             p_cov_dict[cov_symbol] = (
                                 np.squeeze(cov_value), cov_operation)
-                            
+
                     elif p_cov is not None:
                         if np.size(p_cov) != 0: raise ValueError("{}_cov must not be set ({}) if {}_def is set to 'free' or 'fixed'".format(key, self.p_dict[key_cov], key))
                     logging.debug('Covarying symbols for {}: {}'.format(key, p_cov_dict.keys()))
@@ -1427,7 +1427,7 @@ class LinesModel(Model):
             if key_guess in self.p_dict: self.unused_keys.pop(key_guess)
             if key_def in self.p_dict: self.unused_keys.pop(key_def)
             if key_cov in self.p_dict: self.unused_keys.pop(key_cov)
-            
+
 
         line_nb = self._get_line_nb()
         self.p_def = dict()
@@ -1439,7 +1439,7 @@ class LinesModel(Model):
         if self._get_fmodel() in ['sincgauss', 'sincgaussphased']:
             parse_param('sigma', self._get_sigma_cov_operation())
         if self._get_fmodel() in ['sincphased', 'sincgaussphased']:
-            parse_param('alpha', self._get_alpha_cov_operation())    
+            parse_param('alpha', self._get_alpha_cov_operation())
 
         # check cov values and def for log parameters sigma and fwhm
         for key_cov in self.p_cov:
@@ -1452,8 +1452,8 @@ class LinesModel(Model):
                     for ikey_def in keys_def:
                         self.p_val[ikey_def] = 0.
                     self.p_cov[key_cov] = (self.p_cov[key_cov][0] + vals[0], self.p_cov[key_cov][1])
-                
-        
+
+
     def _get_amp_cov_operation(self):
         """Return covarying amplitude operation"""
         return lambda x, y: x * y
@@ -1502,13 +1502,13 @@ class LinesModel(Model):
         self._p_val2array()
 
         for key in self.p_array.keys():
-            if self.p_array[key] is None: 
+            if self.p_array[key] is None:
                 if 'pos' in key:
                     raise Exception('initial guess on lines position must be given, no automatic lines detection is implemented at this level.')
-                
+
                 if 'fwhm' in key:
                     self.p_array[key] = FWHM_INIT
-                    
+
                 if 'sigma' in key:
                     self.p_array[key] = 1e-8
 
@@ -1523,7 +1523,7 @@ class LinesModel(Model):
 
         self._p_array2val()
         self.val2free()
-        
+
 
     def _get_line_nb(self):
         """Return the number of lines"""
@@ -1554,7 +1554,7 @@ class LinesModel(Model):
         else:
             iline = self._get_iline_from_key(
                 self.p_def.keys()[self.p_def.values().index(idef)])
-    
+
         if 'amp' in idef:
             return gvar.gvar(mean, max(10 * mean, AMP_SDEV))
         elif 'pos' in idef:
@@ -1562,10 +1562,10 @@ class LinesModel(Model):
             return gvar.gvar(mean, fwhm)
         elif 'fwhm' in idef:
             return gvar.gvar(mean, max(mean, FWHM_SDEV))
-        elif 'sigma' in idef:            
+        elif 'sigma' in idef:
             return gvar.gvar(mean, max(mean, SIGMA_SDEV))
         else: raise NotImplementedError('not implemented for {}'.format(idef))
-        
+
     def _p_val2array(self):
         self.p_array = dict(self.p_val)
 
@@ -1584,10 +1584,10 @@ class LinesModel(Model):
 
         :param p_free: (Optional) New values of the free parameters
           (default None).
-          
+
         :param multf: 1d vector with the same length as x vector which
           represent the function by which the model must be multiplied.
-          
+
         :param return_models: (Optional) If True return also
           individual models (default False)
         """
@@ -1600,7 +1600,7 @@ class LinesModel(Model):
         fmodel = self._get_fmodel()
         mod = None
         models = list()
-        
+
         if multf is not None:
             if isinstance(multf[0], gvar.GVar):
                 multfsp_mean = scipy.interpolate.UnivariateSpline(
@@ -1610,8 +1610,8 @@ class LinesModel(Model):
             else:
                 multfsp = scipy.interpolate.UnivariateSpline(
                     x, multf, k=1, s=0, ext=2)
-            
-        
+
+
         for iline in range(line_nb):
             if multf is not None:
                 try:
@@ -1625,14 +1625,14 @@ class LinesModel(Model):
 
             if np.any(np.isnan(gvar.mean(mult_amp))): raise StandardError('Nan in mult_amp')
 
-            
+
             if fmodel == 'sinc':
                 line_mod = utils.spectrum.sinc1d(
                     x, 0.,
                     self.p_array[self._get_ikey('amp', iline)],
                     self.p_array[self._get_ikey('pos', iline)],
                     self.p_array[self._get_ikey('fwhm', iline)])
-                
+
             elif fmodel == 'sincgauss':
                 line_mod = utils.spectrum.sincgauss1d(
                     x, 0.,
@@ -1663,7 +1663,7 @@ class LinesModel(Model):
                 ## line_mod =  np.sqrt(utils.spectrum.sinc1d(
                 ##     x, 0., p_array[iline, 0],
                 ##     p_array[iline, 1], p_array[iline, 2])**2.)
-                
+
             elif fmodel == 'gaussian':
                 line_mod = utils.spectrum.gaussian1d(
                     x, 0.,
@@ -1674,7 +1674,7 @@ class LinesModel(Model):
                 raise ValueError("fmodel must be set to 'sinc', 'gaussian', 'sincgauss', 'sincphased', 'sincgaussphased' or 'sinc2'")
 
             line_mod *= mult_amp
-            
+
             if mod is None:
                 mod = np.copy(line_mod)
             else:
@@ -1696,7 +1696,7 @@ class Cm1LinesModel(LinesModel):
 
     .. seealso:: For more information please refer to
       :py:class:`fit.LinesModel`
-    
+
     """
     accepted_keys = list(LinesModel.accepted_keys) + list((
         'step_nb',
@@ -1708,7 +1708,7 @@ class Cm1LinesModel(LinesModel):
     :py:attr:`fit.Model.p_dict`)"""
 
     def _w2pix(self, w):
-        """Translate wavenumber to pixels"""        
+        """Translate wavenumber to pixels"""
         return utils.spectrum.fast_w2pix(w, self.axis_min, self.axis_step)
 
 
@@ -1720,7 +1720,7 @@ class Cm1LinesModel(LinesModel):
         """Return covarying position operation for an input velocity in km/s"""
         return lambda lines, vel: lines * gvar.sqrt((1. - vel / constants.LIGHT_VEL_KMS)
                                                     / (1. + vel / constants.LIGHT_VEL_KMS))
-         
+
     def _p_val2array(self):
         """Transform :py:attr:`fit.Model.p_val` to :py:attr:`fit.LinesModel.p_array`"""
         # get lines pos / fwhm
@@ -1739,7 +1739,7 @@ class Cm1LinesModel(LinesModel):
         if self._get_fmodel() in ['sincgauss', 'sincgaussphased']:
             sigma_pix = utils.fit.vel2sigma(
                 np.array(sigma_kms), lines_cm1, self.axis_step)
-                        
+
         self.p_array = dict(self.p_val)
         for iline in range(self._get_line_nb()):
             self.p_array[self._get_ikey('pos', iline)] = lines_pix[iline]
@@ -1754,7 +1754,7 @@ class Cm1LinesModel(LinesModel):
         """Transform :py:attr:`fit.LinesModel.p_array` to :py:attr:`fit.Model.p_val`."""
         if p_array is None:
             p_array = dict(self.p_array)
-            
+
         # get lines cm1 / fwhm
         # convert pos pix->cm-1
         # convert fwhm pix->cm-1
@@ -1766,7 +1766,7 @@ class Cm1LinesModel(LinesModel):
             fwhm_pix.append(p_array[self._get_ikey('fwhm', iline)])
             if self._get_fmodel() in ['sincgauss', 'sincgaussphased']:
                 sigma_pix.append(p_array[self._get_ikey('sigma', iline)])
-            
+
         lines_cm1 = self._pix2w(np.array(lines_pix))
         fwhm_cm1 = np.array(fwhm_pix) * self.axis_step
         if self._get_fmodel() in ['sincgauss', 'sincgaussphased']:
@@ -1781,7 +1781,7 @@ class Cm1LinesModel(LinesModel):
                 self.p_val[self._get_ikey('sigma', iline)] = sigma_kms[iline]
 
         return self.p_val
-      
+
 
     def _estimate_sdev(self, idef, mean):
         """Estimate standard deviation of a free parameter
@@ -1791,7 +1791,7 @@ class Cm1LinesModel(LinesModel):
         AMP_SDEV = 1000
 
         fwhm_sdev_cm1 = self.axis_step * FWHM_SDEV
-        
+
         # get reference line if idef is a covariant parameter
         if 'def' not in idef:
             iline = self._get_iline_from_key(idef)
@@ -1814,7 +1814,7 @@ class Cm1LinesModel(LinesModel):
         elif 'alpha' in idef:
             return gvar.gvar(np.squeeze(mean), max(mean, 2*np.pi))
         else: raise NotImplementedError('not implemented for {}'.format(idef))
-        
+
 
 
     def parse_dict(self):
@@ -1825,33 +1825,33 @@ class Cm1LinesModel(LinesModel):
             raise utils.err.FitInitError('step_nb keyword must be set' )
         self.step_nb = float(self.p_dict['step_nb'])
         self.unused_keys.pop('step_nb')
-        
+
         if 'step' not in self.p_dict:
             raise utils.err.FitInitError('step keyword must be set' )
         self.step = float(self.p_dict['step'])
         self.unused_keys.pop('step')
-        
+
         if 'order' not in self.p_dict:
             raise utils.err.FitInitError('order keyword must be set' )
         self.order = int(self.p_dict['order'])
         self.unused_keys.pop('order')
-        
+
         if 'nm_laser' not in self.p_dict:
             raise utils.err.FitInitError('nm_laser keyword must be set' )
         self.nm_laser = float(self.p_dict['nm_laser'])
         self.unused_keys.pop('nm_laser')
-    
+
         if 'nm_laser_obs' not in self.p_dict:
             raise utils.err.FitInitError('nm_laser_obs keyword must be set' )
         self.nm_laser_obs = float(self.p_dict['nm_laser_obs'])
         self.unused_keys.pop('nm_laser_obs')
-        
+
         self.correction_coeff = self.nm_laser_obs / self.nm_laser
 
         self.axis_min = cutils.get_cm1_axis_min(
             self.step_nb, self.step, self.order,
             corr=self.correction_coeff)
-    
+
         self.axis_step = cutils.get_cm1_axis_step(
             self.step_nb, self.step, corr=self.correction_coeff)
 
@@ -1865,19 +1865,19 @@ class NmLinesModel(Cm1LinesModel):
 
     .. seealso:: For more information please refer to
       :py:class:`fit.Cm1LinesModel` and :py:class:`fit.LinesModel`
-    
+
     """
     def _get_pos_cov_operation(self):
         """Return covarying position operation for an input velocity in km/s"""
         return lambda lines, vel: lines * np.sqrt((1. + vel / constants.LIGHT_VEL_KMS)
                                                   / (1. - vel / constants.LIGHT_VEL_KMS))
 
-    
+
     def parse_dict(self):
         """Parse input dictionary :py:attr:`fit.Model.p_dict`"""
         raise Exception('Not re-implemented')
         Cm1LinesModel.parse_dict(self)
-        
+
         self.axis_min = cutils.get_nm_axis_min(
             self.step_nb, self.step, self.order,
             corr=self.correction_coeff)
@@ -1899,7 +1899,7 @@ class Params(dict):
     def __setattr__(self, key, value):
         raise Exception('Parameter is read-only')
 
-    
+
 
 ################################################
 #### CLASS InputParams ######################
@@ -1914,23 +1914,23 @@ class InputParams(object):
 
     # simulate the use of this class as a dict converted class
     def __getitem__(self, key): return getattr(self, key)
-    def __setitem__(self, key, value): return setattr(self, key, value)    
-       
+    def __setitem__(self, key, value): return setattr(self, key, value)
+
     def __init__(self, step_nb):
         self.params = list()
         self.models = list()
-        
+
         self.base_params = Params()
         self.base_params['step_nb'] = int(step_nb)
 
         self.allparams = Params()
         self.allparams.update(self.base_params)
-        
+
         self.axis_min = 0
         self.axis_step = 1
         self.axis_max = self.base_params.step_nb
         self.set_signal_range(self.axis_min, self.axis_max)
-        
+
     def append_model(self, model, operation, params):
         if self.has_model(model):
             raise utils.err.FitInputError('{} already added'.format(model))
@@ -1939,11 +1939,11 @@ class InputParams(object):
         self.check_signal_range()
         self.allparams.update(params)
 
-    def set_signal_range(self, rmin, rmax):    
+    def set_signal_range(self, rmin, rmax):
         if (not (self.axis_min <= rmin < rmax)
             or not (rmin < rmax <= self.axis_max)):
             raise utils.err.FitInputError('Check rmin and rmax values. Must be between {} and {}'.format(self.axis_min, self.axis_max))
-        
+
         signal_range_pix = utils.spectrum.fast_w2pix(
             np.array([rmin, rmax], dtype=float),
             self.axis_min, self.axis_step)
@@ -1973,29 +1973,29 @@ class InputParams(object):
         """
         raw = dict()
         raw['models'] = list(self.models)
-        
+
         _params = list()
         # here we convert all gvars convertible arrays or values to a
         # _mean / _sdev couple to avoid pickling gvars. These couples
         # must then be merged again as gvars in FitVector.__init__()
         raw['params'] = utils.fit.paramslist2pick(self.params)
-        
+
         raw['signal_range'] = list(self.signal_range)
         raw['base_params'] = dict(self.base_params)
-        
+
         raw['allparams'] = dict()
         for _iparams in raw['params']:
             raw['allparams'].update(_iparams)
         raw['baseclass'] = self.__class__.__name__
         return raw
-   
+
     def add_continuum_model(self, **kwargs):
         params = Params()
         params['poly_order'] = 0
         params['poly_guess'] = None
 
         params.update(kwargs)
-        
+
         # remove bad keys in case
         for key in params.keys():
             if key not in ContinuumModel.accepted_keys:
@@ -2024,41 +2024,41 @@ class InputParams(object):
                         params[iparam] = list(ival)
                     logging.debug('changed single-valued parameter {}: {}'.format(
                         iparam, params[iparam]))
-                
-        # check sigma value        
+
+        # check sigma value
         if params.fmodel in ['sincgauss', 'sincgaussphased']:
             if 'fwhm_def' in params:
                 if np.any(np.array(params.fwhm_def, dtype=str) != 'fixed'):
                     warnings.warn('fmodel is a sincgauss and FWHM is not fixed')
             else:
                 params['fwhm_def'] = ['fixed'] * np.size(lines)
-                
+
             if 'sigma_def' in params:
                 sigma_cov_vel = self._get_sigma_cov_vel(fwhm_guess, lines)
 
                 params['sigma_def'] = np.array(params.sigma_def, dtype=str)
                 utils.validate.has_len(params.sigma_def, np.size(lines), object_name='sigma_def')
                 utils.validate.has_len(sigma_cov_vel, np.size(lines), object_name='sigma_cov_vel')
-                
+
                 if 'sigma_guess' in params:
                     utils.validate.has_len(params.sigma_guess, np.size(lines), object_name='sigma_guess')
-                    
+
                     # sigma cov vel is adjusted to the initial guess + apodization
                     sqroots = list()
                     for i in range(np.size(lines)):
                         isquare = gvar.gvar(sigma_cov_vel[i])**2. + gvar.gvar(params.sigma_guess[i])**2.
-                        
+
                         if gvar.sdev(isquare) == 0:
                             isqroot = gvar.gvar(np.sqrt(gvar.mean(isquare)))
                         else:
                             isqroot = np.sqrt(isquare)
-                    
+
                         sqroots.append(isqroot)
                     sigma_cov_vel = np.array(sqroots)
 
                     _sigma_guess = gvar.mean(sigma_cov_vel)
                 else: _sigma_guess = np.zeros_like(lines)
-                        
+
                 if 'sigma_cov' not in params:
                     _sigma_cov = list()
                     _allcov = list()
@@ -2087,19 +2087,19 @@ class InputParams(object):
             raise utils.err.FitInputError("Line position must be defined with the 'lines' parameter")
 
         return params
-    
+
     def add_lines_model(self, lines, fwhm_guess, **kwargs):
-        
+
         lines = np.array(lines)
 
         if np.any(gvar.sdev(lines) == 0.):
             lines_sdev = self.SHIFT_SDEV * self.axis_step
             lines = gvar.gvar(lines, np.ones_like(lines) * lines_sdev)
 
-        
+
         fwhm_sdev = self.axis_step * self.FWHM_SDEV
         fwhm_guess = gvar.gvar(gvar.mean(fwhm_guess), fwhm_sdev)
-        
+
         sigma_guess = gvar.gvar(
             0., self.axis_step * self.FWHM_SDEV)
 
@@ -2116,10 +2116,10 @@ class InputParams(object):
 
         # check and update default params with user kwargs
         params = self._check_lines_params(kwargs, fwhm_guess, lines)
-        
+
         if 'fwhm_guess' in params:
             raise utils.err.FitInputError('This parameter must be defined with the non-keyword parameter fwhm_guess')
-        
+
         default_params.update(params)
         all_params = Params()
         all_params.update(self.base_params)
@@ -2132,7 +2132,7 @@ class InputParams(object):
                 del all_params[key]
 
         self.append_model(LinesModel, 'add', all_params)
-        
+
         # continuum model is automatically added
         kwargs = self.add_continuum_model(**kwargs)
 
@@ -2159,7 +2159,7 @@ class Cm1InputParams(InputParams):
           angle is used to define the theoretical fwhm (which is not
           modified during the projection).
         """
-        
+
         self.params = list()
         self.models = list()
 
@@ -2178,12 +2178,12 @@ class Cm1InputParams(InputParams):
 
         self.base_params['nm_laser_obs'] = (self.base_params.nm_laser
                                             * self.base_params.axis_corr_proj)
-        
+
         self.base_params['filter_file_path'] = str(filter_file_path)
 
         self.allparams = Params()
         self.allparams.update(self.base_params)
-        
+
         self.axis_min = cutils.get_cm1_axis_min(self.base_params.step_nb,
                                                 self.base_params.step,
                                                 self.base_params.order,
@@ -2194,7 +2194,7 @@ class Cm1InputParams(InputParams):
         self.axis_max = self.axis_min + (self.base_params.step_nb - 1) * self.axis_step
 
         self.axis = np.arange(self.base_params.step_nb) * self.axis_step + self.axis_min
-        
+
         self.set_signal_range(self.axis_min, self.axis_max)
 
     def _get_sigma_cov_vel(self, fwhm_guess_cm1, lines_cm1):
@@ -2207,7 +2207,7 @@ class Cm1InputParams(InputParams):
                 lines_cm1, self.axis_step)
         return np.atleast_1d(sigma_cov_vel).astype(float)
 
-        
+
     def add_lines_model(self, lines, **kwargs):
 
         # guess lines
@@ -2219,7 +2219,7 @@ class Cm1InputParams(InputParams):
 
         lines_cm1 = np.array(lines_cm1)
 
-        if np.any(gvar.sdev(lines_cm1) == 0.):            
+        if np.any(gvar.sdev(lines_cm1) == 0.):
             lines_cm1_sdev = self.SHIFT_SDEV * self.axis_step
             lines_cm1 = gvar.gvar(lines_cm1, np.ones_like(lines_cm1) * lines_cm1_sdev)
 
@@ -2257,7 +2257,7 @@ class Cm1InputParams(InputParams):
             'fmodel':'sinc'}
 
         params = self._check_lines_params(kwargs, fwhm_guess_cm1, lines_cm1)
-        
+
         default_params.update(params)
 
         all_params = Params()
@@ -2281,14 +2281,14 @@ class Cm1InputParams(InputParams):
 
         if self.base_params.filter_file_path is None:
             raise utils.err.FitInputError('filter_file_path is None')
-        
+
         filter_spline_nm = utils.filters.read_filter_file(
             self.base_params.filter_file_path, return_spline=True)
         nm_axis_ireg = utils.spectrum.create_nm_axis_ireg(
             self.base_params.step_nb, self.base_params.step, self.base_params.order,
             corr=self.base_params.axis_corr_proj)
         filter_function = filter_spline_nm(nm_axis_ireg.astype(float)) / 100.
-        
+
 
         default_params = Params()
         default_params['filter_function'] = filter_function
@@ -2315,7 +2315,7 @@ class Cm1InputParams(InputParams):
         self.append_model(FilterModel, 'mult', all_params)
 
         self.clean_kwargs(kwargs, all_params)
-        
+
     def check_signal_range(self):
         if self.has_model(FilterModel):
             filter_bandpass = utils.spectrum.nm2cm1(utils.filters.get_filter_bandpass(
@@ -2336,7 +2336,7 @@ class Cm1InputParams(InputParams):
         raw['signal_range_cm1'] = self.signal_range_cm1
         raw['axis_min'] = self.axis_min
         raw['axis_max'] = self.axis_max
-        raw['axis_step'] = self.axis_step        
+        raw['axis_step'] = self.axis_step
         raw['baseclass'] = self.__class__.__name__
         return raw
 
@@ -2351,9 +2351,9 @@ class OutputParams(Params):
     def translate(self, inputparams, fitvector):
         if isinstance(inputparams, InputParams):
             inputparams = inputparams.convert()
-            
+
         inputparams['params'] = utils.fit.pick2paramslist(inputparams['params'])
-        
+
         all_inputparams = Params()
 
         for iparams in inputparams['params']:
@@ -2468,7 +2468,7 @@ class OutputParams(Params):
 
             broadening = (gvar.fabs(sigma_total_kms**2
                                     - sigma_apod_kms**2))**0.5
-            
+
             self['broadening_gvar'] = broadening
             self['broadening'] = gvar.mean(broadening)
             self['broadening_err'] = gvar.sdev(broadening)
@@ -2476,7 +2476,7 @@ class OutputParams(Params):
             # compute fwhm in Angstroms to get flux
             # If calibrated, amplitude unit must be in erg/cm2/s/A, then
             # fwhm/width units must be in Angströms
-            if wavenumber:                
+            if wavenumber:
                 fwhm = utils.spectrum.fwhm_cm12nm(
                     line_params[:,3], line_params[:,2]) * 10.
             else:
@@ -2525,7 +2525,7 @@ class OutputParams(Params):
 
         return self
 
-        
+
     def convert(self):
         """Convert class to a raw pickable format
         """
@@ -2534,7 +2534,7 @@ class OutputParams(Params):
             raw[ipar] = self[ipar]
         return raw
 
-        
+
 
 ################################################
 #### Functions #################################
@@ -2598,19 +2598,19 @@ def _fit_lines_in_spectrum(spectrum, ip, fit_tol=1e-10,
     if fit != []:
         fit = OutputParams(fit)
         return fit.translate(ip, fv)
-    
+
     else: return []
 
 def _prepare_input_params(step_nb, lines, step, order, nm_laser,
                           theta_proj, zpd_index, wavenumber=True,
                           filter_file_path=None,
                           theta_orig=None,
-                          apodization=1., 
-                          **kwargs):    
+                          apodization=1.,
+                          **kwargs):
     """Prepare input parameters
 
     :param step_nb: Number of steps of the spectrum
-    
+
     :param lines: Positions of the lines in nm/cm-1
 
     :param step: Step size in nm
@@ -2626,7 +2626,7 @@ def _prepare_input_params(step_nb, lines, step, order, nm_laser,
       incident angle of the spectrum.
 
     :param zpd_index: Index of the ZPD in the interferogram.
-    
+
     :param apodization: (Optional) Apodization level. Permit to separate the
       broadening due to the apodization and the real line broadening
       (see 'broadening' output parameter, default 1.).
@@ -2660,7 +2660,7 @@ def _prepare_input_params(step_nb, lines, step, order, nm_laser,
 
     if filter_file_path is not None:
         ip.add_filter_model(**kwargs)
-        
+
     if 'signal_range' in kwargs:
         if kwargs['signal_range'] is not None:
             ip.set_signal_range(min(kwargs['signal_range']),
@@ -2680,7 +2680,7 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
                           snr_guess=None,
                           max_iter=None,
                           **kwargs):
-    
+
     """Fit lines in spectrum
 
     .. warning:: If spectrum is in wavenumber (option wavenumber set
@@ -2700,9 +2700,9 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
 
     :param theta_proj: Projected incident angle of the spectrum in
       degrees.
-      
+
     :param zpd_index: Index of the ZPD in the interferogram.
-    
+
     :param apodization: (Optional) Apodization level. Permit to separate the
       broadening due to the apodization and the real line broadening
       (see 'broadening' output parameter, default 1.).
@@ -2737,14 +2737,14 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
     :return: a dictionary containing:
 
       * all the fit parameters [key: 'fit_params']
-    
+
       * lines parameters [key: 'lines_params'] Lines parameters are
         given as an array of shape (lines_nb, 5). The order of the 5
         parameters for each lines is [height at the center of the
         line, amplitude, position, fwhm, sigma]. Position and FWHM are given
         in nm/cm-1 depending on the input unit (i.e. nm if wavenumber
         is False and cm-1 if wavenumber is True)
-      
+
       * lines parameters errors [key: 'lines_params_err']
 
       * velocity [key: 'velocity'] Velocity of the lines in km/s
@@ -2753,7 +2753,7 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
         the lines in km/s
 
       * residual [key: 'residual']
-      
+
       * chi-square [key: 'chi2']
 
       * reduced chi-square [key: 'rchi2']
@@ -2765,7 +2765,7 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
       * fitted spectrum [key: 'fitted_vector']
 
       * log(Gaussian Bayes Factor) [key: 'logGBF']
-   
+
     """
     all_args = dict(locals()) # used in case fit is retried (must stay
                               # at the very beginning of the function
@@ -2774,7 +2774,7 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
     if velocity_range is not None:
         raise NotImplementedError()
 
-                              
+
     ip = _prepare_input_params(spectrum.shape[0], lines, step, order, nm_laser,
                                theta, zpd_index, wavenumber=wavenumber,
                                filter_file_path=filter_file_path,
@@ -2790,19 +2790,19 @@ def fit_lines_in_spectrum(spectrum, lines, step, order, nm_laser,
 
     if fit != []:
         return fit
-    
+
     elif ip.allparams.fmodel in ['sincgauss', 'sincgaussphased']:
         warnings.warn('bad fit, fmodel replaced by a normal sinc')
         all_args['fmodel'] = 'sinc'
         return fit_lines_in_spectrum(**all_args)
-        
+
     return []
-    
+
 
 
 def fit_lines_in_vector(vector, lines, fwhm_guess, fit_tol=1e-10,
     compute_mcmc_error=False, snr_guess=None, max_iter=None, **kwargs):
-    
+
     """Fit lines in a vector
 
     Use this function only if little is known about the vector. A
@@ -2838,17 +2838,17 @@ def fit_lines_in_vector(vector, lines, fwhm_guess, fit_tol=1e-10,
     :return: a dictionary containing:
 
       * all the fit parameters [key: 'fit_params']
-    
+
       * lines parameters [key: 'lines_params'] Lines parameters are
         given as an array of shape (lines_nb, 5). The order of the 5
         parameters for each lines is [height at the center of the
         line, amplitude, position, fwhm, sigma]. Postion and FWHM are given
         in channels.
-      
+
       * lines parameters errors [key: 'lines_params_err']
 
       * residual [key: 'residual']
-      
+
       * chi-square [key: 'chi2']
 
       * reduced chi-square [key: 'rchi2']
@@ -2860,7 +2860,7 @@ def fit_lines_in_vector(vector, lines, fwhm_guess, fit_tol=1e-10,
       * fitted spectrum [key: 'fitted_vector']
 
       * log(Gaussian Bayes Factor) [key: 'logGBF']
-   
+
     """
     raise NotImplementedError('must be checked')
     ip = InputParams(vector.shape[0])
@@ -2871,14 +2871,14 @@ def fit_lines_in_vector(vector, lines, fwhm_guess, fit_tol=1e-10,
         if kwargs['signal_range'] is not None:
             ip.set_signal_range(min(kwargs['signal_range']),
                                 max(kwargs['signal_range']))
-    
+
     fv = FitVector(vector,
                    ip.models, ip.params,
                    signal_range=ip.signal_range,
                    fit_tol=fit_tol,
                    snr_guess=snr_guess,
                    max_iter=max_iter)
-    
+
     fit = fv.fit(compute_mcmc_error=compute_mcmc_error)
 
     if fit != []:
@@ -2895,9 +2895,9 @@ def create_cm1_lines_model(lines_cm1, amp, step, order, resolution,
     """Return a simple emission-line spectrum model in cm-1
 
     :param lines: lines in cm-1
-    
+
     :param amp: Amplitude (must have the same size as lines)
-    
+
     :param step: Step size
 
     :param order: Folding order
@@ -2907,10 +2907,10 @@ def create_cm1_lines_model(lines_cm1, amp, step, order, resolution,
     :param theta: Incident angle
 
     :param step_nb: Number of steps of the spectrum.
-    
+
     :param vel: (Optional) Global velocity shift applied to all the
       lines (in km/s, default 0.)
-    
+
     :param sigma: (Optional) Line broadening (in km/s, default 0.)
 
     :param alpha: (Optional) Phase coefficient of the lines (default
@@ -2925,7 +2925,7 @@ def create_cm1_lines_model(lines_cm1, amp, step, order, resolution,
 
     nm_laser = 543.5 # can be anything
     nm_laser_obs = nm_laser / np.cos(np.deg2rad(theta))
-    
+
     step_nb = utils.spectrum.compute_step_nb(resolution, step, order)
     fwhm_guess = utils.spectrum.compute_line_fwhm(
         step_nb, step, order, nm_laser_obs / nm_laser, wavenumber=True)
@@ -2946,13 +2946,13 @@ def create_cm1_lines_model(lines_cm1, amp, step, order, resolution,
         'fmodel':fmodel,
         'amp_def':['free'] * np.size(lines_cm1)
     }
-    
+
     if fmodel in ['sincgauss', 'sincgaussphased']:
         sigma_params = {
             'sigma_def':['1'] * np.size(lines_cm1),
             'sigma_guess':[gvar.mean(sigma)] * np.size(lines_cm1),
             'sigma_cov':[0.]}
-        
+
         model_params.update(sigma_params)
 
     if fmodel in ['sincgaussphased',]:
@@ -2960,19 +2960,19 @@ def create_cm1_lines_model(lines_cm1, amp, step, order, resolution,
             'alpha_def':['1'] * np.size(lines_cm1),
             'alpha_guess':[gvar.mean(alpha)] * np.size(lines_cm1),
             'alpha_cov':[0.]}
-        
+
         model_params.update(alpha_params)
-    
-        
+
+
     lines_model = Cm1LinesModel(model_params) # never more than 0.
 
     p_free = dict(lines_model.p_free)
     for iline in range(np.size(lines_cm1)):
         p_free[lines_model._get_ikey('amp', iline)] = amp[iline]
-        
+
     lines_model.set_p_free(p_free)
     spectrum = lines_model.get_model(np.arange(step_nb))
-    
+
     #model, models = lines_model.get_model(np.arange(step_nb), return_models=True)
     return gvar.mean(spectrum)
 
@@ -2981,16 +2981,16 @@ def create_lines_model(lines, amp, fwhm, step_nb, line_shift=0.,
     """Return a simple emission-line spectrum model with no physical units.
 
     :param lines: lines channels.
-    
+
     :param amp: Amplitude (must have the same size as lines).
-    
+
     :param fwhm: lines FWHM (in channels).
-    
+
     :param step_nb: Number of steps of the spectrum.
-    
+
     :param line_shift: (Optional) Global shift applied to all the
       lines (in channels, default 0.)
-    
+
     :param sigma: (Optional) Sigma of the lines (in channels, default
       0.)
 
@@ -3003,7 +3003,7 @@ def create_lines_model(lines, amp, fwhm, step_nb, line_shift=0.,
     if np.size(amp) != np.size(lines):
         raise Exception('The number of lines and the length of the amplitude vector must be the same')
 
-    lines_model = LinesModel(    
+    lines_model = LinesModel(
         {'line_nb':np.size(lines),
          'amp_def':'free',
          'fwhm_def':'1',
@@ -3070,7 +3070,7 @@ def check_fit_cm1(lines_cm1, amp, step, order, resolution, theta,
     ## pl.plot(gvar.mean(spectrum))
     ## pl.show()
     ## quit()
-    
+
     # add noise
     if snr > 0.:
         spectrum += np.random.standard_normal(
@@ -3094,7 +3094,7 @@ def check_fit_cm1(lines_cm1, amp, step, order, resolution, theta,
 
     fit = fit_lines_in_spectrum(
         spectrum, lines_cm1, step, order, 543.5, theta,
-        0, wavenumber=True, 
+        0, wavenumber=True,
         fmodel=fmodel, pos_cov=vel, pos_def='1',
         fwhm_def='fixed',
         sigma_def='1',
@@ -3114,18 +3114,18 @@ def check_fit(lines, amp, fwhm, step_nb, snr,
     of the fitting routine.
 
     :param lines: lines channels
-    
+
     :param amp: Amplitude (must have the same size as lines)
-    
+
     :param fwhm: lines FWHM (in channels)
-    
+
     :param step_nb: Number of steps of the spectrum.
 
     :param snr: SNR of the strongest line
-    
+
     :param line_shift: (Optional) Global shift applied to all the
       lines (in channels, default 0.)
-    
+
     :param sigma: (Optional) Sigma of the lines (in channels, default
       0.)
 
@@ -3148,7 +3148,7 @@ def check_fit(lines, amp, fwhm, step_nb, snr,
         sigma = gvar.gvar(sigma, np.ones_like(sigma) * SIGMA_SDEV)
     if gvar.sdev(line_shift) == 0.:
         line_shift = gvar.gvar(line_shift, np.ones_like(line_shift) * SHIFT_SDEV)
-    
+
     # add noise
     if snr > 0.:
         spectrum += np.random.standard_normal(

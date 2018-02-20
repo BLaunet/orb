@@ -430,7 +430,7 @@ class FitVector(object):
 
         ### CLASSIC MODE ##################
         if self.classic:
-            
+            logging.debug('Classic Mode')
             priors_arr = self._all_p_dict2arr(priors_dict)
             try:
                 fit_classic = scipy.optimize.curve_fit(
@@ -485,6 +485,7 @@ class FitVector(object):
 
         ### LSQFIT MODE ##################
         else:
+            logging.debug('Lsqfit Mode')
             if self.snr_guess is None:
                 raise Exception('No SNR guess. This fit must be made in classic mode')
 

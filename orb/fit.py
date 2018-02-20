@@ -408,10 +408,13 @@ class FitVector(object):
         all_args = dict(locals()) # used in case fit is retried (must stay
                                   # at the very beginning of the
                                   # function ;)
-        def fit_args(snr):
+        def fit_args(err):
+            logging.debug('Error input :%.4f'%err)
+            err /= self.normalization_coeff
             vector = self._get_vector_onrange()
-            err = (np.nanmax(vector) - np.nanmedian(vector)) / snr
-            vector = gvar.gvar(vector, np.ones_like(vector) * err) 
+
+            # err = (np.nanmax(vector) - np.nanmedian(vector)) / snr
+            vector = gvar.gvar(vector, np.ones_like(vector) * err)
             return dict(
                 udata=(np.arange(self.vector.shape[0]),
                        vector),

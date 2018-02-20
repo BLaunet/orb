@@ -1727,7 +1727,9 @@ class Astrometry(Tools):
                  return_fit_params=False, rscale_coeff=1.,
                  compute_precision=True, compute_distortion=False,
                  realign=False, return_error_maps=False,
-                 return_error_spl=False):
+                 return_error_spl=False,
+                 star_catalog_deg = None,
+                 star_detection_pix = None):
         """Register data and return a corrected pywcs.WCS
         object.
 

@@ -408,12 +408,12 @@ class FitVector(object):
         all_args = dict(locals()) # used in case fit is retried (must stay
                                   # at the very beginning of the
                                   # function ;)
-        def fit_args(snr):
-            # err /= self.normalization_coeff
-            # logging.info('Error input :%.4f'%err)
+        def fit_args(err):
+            logging.debug('Error input :%.4E'%err)
+            err /= self.normalization_coeff
             vector = self._get_vector_onrange()
 
-            err = (np.nanmax(vector) - np.nanmedian(vector)) / snr
+            # err = (np.nanmax(vector) - np.nanmedian(vector)) / snr
             vector = gvar.gvar(vector, np.ones_like(vector) * err)
             return dict(
                 udata=(np.arange(self.vector.shape[0]),
@@ -555,7 +555,7 @@ class FitVector(object):
 
 
             returned_data['chi2'] = fit.chi2
-            returned_data['residual'] = residual
+            returned_data['residual'] = (self.vector - fitted_vector)* self.normalization_coeff#residual
             # kolmogorov smirnov test: if p_value < 0.05 residual is not normal
             returned_data['ks_pvalue'] = scipy.stats.kstest(
                 residual / np.std(utils.stats.sigmacut(residual)), 'norm')[1]
@@ -2439,6 +2439,9 @@ class OutputParams(Params):
         line_params_err = all_params_err.reshape(
             (all_params_err.shape[0]/line_nb, line_nb)).T
 
+        line_params_err[:,1] = np.where(line_params_err[:,1] > fitvector.snr_guess,
+                                        line_params_err[:,1],
+                                        fitvector.snr_guess)
 
         # set 0 sigma to nan
         if all_inputparams.fmodel in ['sincgauss', 'sincgaussphased']:

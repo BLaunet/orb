@@ -488,6 +488,7 @@ class FitVector(object):
 
         ### LSQFIT MODE ##################
         else:
+            logging.debug('Lsqfit Mode')
             if self.snr_guess is None:
                 raise Exception('No SNR guess. This fit must be made in classic mode')
 

@@ -1301,7 +1301,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
                        fix_fwhm=False, readout_noise=10.,
                        dark_current_level=0., local_background=True,
                        no_aperture_photometry=False,
-                       precise_guess=False, aper_coeff=3., blur=False,
+                       precise_guess=True, aper_coeff=3., blur=False,
                        no_fit=False, estimate_local_noise=True,
                        multi_fit=False, enable_zoom=False,
                        enable_rotation=False, saturation=None,
@@ -1503,7 +1503,7 @@ def fit_stars_in_frame(frame, star_list, box_size,
 
     if not local_background and background_value is None:
         if precise_guess:
-            background = utils.astrometry.sky_background_level(frame)
+            background = sky_background_level(frame)
         else:
             background = frame_median
         if not multi_fit:

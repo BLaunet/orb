@@ -44,6 +44,7 @@ setup(
     author_email='thomas.martin.1@ulaval.ca',
     maintainer='Thomas Martin',
     maintainer_email='thomas.martin.1@ulaval.ca',
+    requires=['cython', 'numpy', 'gvar'],
     setup_requires=['cython', 'numpy', 'gvar'],
     install_requires=['cython', 'numpy', 'gvar'],
     description='Kernel module for the reduction and analysis of SITELLE data',
